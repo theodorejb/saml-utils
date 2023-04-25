@@ -36,6 +36,10 @@ Throws an exception if the attribute doesn't exist.
 
 ## SamlUtils
 
-### `static getMessageRedirectUrl(SamlMessage $message): string`
+### `getRequestFromGlobals(): MessageContext`
 
-Returns the URL to send a SamlMessage via redirect.
+Returns an object for the SAML request or response from the global GET/POST data.
+
+### `getMessageHttpResponse(SamlMessage $message, string $bindingType): Response`
+
+Returns a Symfony\Component\HttpFoundation\Response instance for sending the SAML message.

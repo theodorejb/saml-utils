@@ -21,10 +21,14 @@ class SamlResponse
     {
         $key = KeyHelper::createPublicKey($certificate);
 
-        /** @var SignatureXmlReader $signatureReader */
-        $signatureReader = $this->response->getSignature();
+        /** @var SignatureXmlReader|null $signature */
+        $signature = $this->response->getSignature();
 
-        if (!$signatureReader->validate($key)) {
+        if (!$signature) {
+            throw new \Exception('Missing response signature');
+        }
+
+        if (!$signature->validate($key)) {
             throw new \Exception('Failed to verify response signature');
         }
     }
