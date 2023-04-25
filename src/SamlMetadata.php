@@ -4,7 +4,8 @@ namespace theodorejb\SamlUtils;
 
 use LightSaml\Credential\X509Certificate;
 use LightSaml\Model\Context\DeserializationContext;
-use LightSaml\Model\Metadata\EntityDescriptor;
+use LightSaml\Model\Metadata\{EntityDescriptor, SingleLogoutService};
+use LightSaml\SamlConstants;
 
 class SamlMetadata
 {
@@ -38,14 +39,19 @@ class SamlMetadata
             throw new \Exception('Failed to retrieve IDP SSO descriptor');
         }
 
-        $binding = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect';
-        $ssoServices = $ssoDescriptor->getAllSingleSignOnServicesByBinding($binding);
+        $ssoService = $ssoDescriptor->getFirstSingleSignOnService(SamlConstants::BINDING_SAML2_HTTP_REDIRECT);
 
-        if (count($ssoServices) === 0) {
+        if ($ssoService === null) {
             throw new \Exception('Failed to retrieve redirect SSO binding');
         }
 
-        return $ssoServices[0]->getLocation();
+        return $ssoService->getLocation();
+    }
+
+    public function getIdpRedirectLogoutService(): ?SingleLogoutService
+    {
+        $ssoDescriptor = $this->entityDescriptor->getFirstIdpSsoDescriptor();
+        return $ssoDescriptor?->getFirstSingleLogoutService(SamlConstants::BINDING_SAML2_HTTP_REDIRECT);
     }
 
     public static function fromXml(string $xml): self

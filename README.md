@@ -16,6 +16,10 @@ Returns the Identity Provider certificate.
 Returns the redirect location defined by the Identity Provider
 for receiving a SAML request to initiate single sign-on. 
 
+### `getIdpRedirectLogoutService(): SingleLogoutService|null`
+
+Returns the redirect logout service if defined by the Identity Provider.
+
 ## SamlResponse
 
 Use `SamlResponse::fromXml(string $xml)` to create an instance from a SAML response message
