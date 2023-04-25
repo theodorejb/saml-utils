@@ -7,10 +7,23 @@ use LightSaml\Context\Profile\MessageContext;
 use LightSaml\Model\Context\SerializationContext;
 use LightSaml\Model\Protocol\SamlMessage;
 use LightSaml\SamlConstants;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\{RedirectResponse, Request};
 
 class SamlUtils
 {
+    /**
+     * @api
+     */
+    public static function getRequestFromGlobals(): MessageContext
+    {
+        $request = Request::createFromGlobals();
+        $bindingFactory = new BindingFactory();
+        $binding = $bindingFactory->getBindingByRequest($request);
+        $messageContext = new MessageContext();
+        $binding->receive($request, $messageContext);
+        return $messageContext;
+    }
+
     /**
      * Returns the URL to send a SamlMessage via redirect (e.g. an authentication request).
      */
