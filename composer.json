@@ -1,6 +1,6 @@
 {
     "name": "theodorejb/saml-utils",
-    "description": "Utilities to simplify Light Saml usage",
+    "description": "Utilities to streamline Light Saml usage",
     "type": "library",
     "license": "MIT",
     "require": {

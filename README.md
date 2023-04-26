@@ -1,45 +1,51 @@
 # SAML Utils
 
-This package provides a few classes to streamline usage of Light Saml.
+This package provides a few helpful utilities on top of
+[Light Saml](https://github.com/litesaml/lightsaml) to streamline common tasks.
 
-## SamlMetadata
+## Install via Composer
 
-Use `SamlMetadata::fromXml(string $xml)` to create an instance from an XML string.
-Includes the following methods:
+`composer require theodorejb/saml-utils`
 
-### `getIdpCertificate(): X509Certificate`
+## Working with metadata
 
-Returns the Identity Provider certificate.
+The `SamlMetadata` class simplifies getting data from Identity Provider metadata.
+Call `SamlMetadata::fromXml($xml)` to create an instance from an Entity Descriptor XML string.
 
-### `getIdpSsoRedirectLocation(): string`
+The underlying `EntityDescriptor` object can be accessed via a readonly `$entityDescriptor` property.
 
-Returns the redirect location defined by the Identity Provider
+`SamlMetadata` implements the following methods:
+
+### `getIdpCertificate()`
+
+Returns an `X509Certificate` instance for the Identity Provider certificate.
+
+### `getIdpSsoRedirectLocation()`
+
+Returns the redirect location string defined by the Identity Provider
 for receiving a SAML request to initiate single sign-on. 
 
-### `getIdpRedirectLogoutService(): SingleLogoutService|null`
+### `getIdpRedirectLogoutService()`
 
-Returns the redirect logout service if defined by the Identity Provider.
+Returns the redirect `SingleLogoutService` if defined by the Identity Provider, otherwise `null`.
 
-## SamlResponse
+## Utility methods
 
-Use `SamlResponse::fromXml(string $xml)` to create an instance from a SAML response message
-from by an Identity Provider. Includes the following methods:
+The `SamlUtils` class implements the following static utility methods:
 
-### `verify(X509Certificate $certificate): void`
+### `getRequestFromGlobals()`
 
-Throws an exception if the SAML response cannot be successfully verified with the certificate.
+Returns a `MessageContext` object for the SAML request or response from the global GET/POST data.
 
-### `getAttributeValue(string $name): string`
+### `getMessageHttpResponse(SamlMessage $message, string $bindingType)`
 
-Returns the value for the specified attribute name.
+Returns a `Symfony\Component\HttpFoundation\Response` instance for sending the SAML message.
+
+### `validateSignature(SamlMessage $message, X509Certificate $certificate)`
+
+Throws an Exception if the message signature is missing or fails verification with the certificate.
+
+### `getResponseAttributeValue(SamlResponse $response, string $name)`
+
+Returns the assertion attribute value for the specified attribute name.
 Throws an exception if the attribute doesn't exist.
-
-## SamlUtils
-
-### `getRequestFromGlobals(): MessageContext`
-
-Returns an object for the SAML request or response from the global GET/POST data.
-
-### `getMessageHttpResponse(SamlMessage $message, string $bindingType): Response`
-
-Returns a Symfony\Component\HttpFoundation\Response instance for sending the SAML message.
