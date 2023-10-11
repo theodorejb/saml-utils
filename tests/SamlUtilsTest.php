@@ -43,21 +43,52 @@ class SamlUtilsTest extends TestCase
         $this->assertSame('jsmith', SamlUtils::getResponseAttributeValue($response, 'short_id'));
     }
 
+    public function testResponseWithoutAttributeStatement(): void
+    {
+        $metadataXml = SamlMetadataTest::getIdpMetadata();
+        $metadata = SamlMetadata::fromXml($metadataXml);
+        $response = $this->getSignedResponseWithoutAttributeStatement();
+
+        SamlUtils::validateSignature($response, $metadata->getIdpCertificate());
+
+        $attributeStatement = SamlUtils::getFirstAttributeStatement($response);
+        $this->assertNull($attributeStatement);
+
+        $this->assertSame('some.username', SamlUtils::getSubjectNameId($response));
+    }
+
+    private static function getSignedResponseWithoutAttributeStatement(): SamlResponse
+    {
+        // response must be deserialized for signature verification
+        return self::getDeserializedResponse(self::getUnserializedResponse());
+    }
+
     private static function getSignedResponse(): SamlResponse
     {
-        $certificate = X509Certificate::fromFile('tests/certs/saml.crt');
-        $privateKey = KeyHelper::createPrivateKey('tests/certs/saml.pem', '', true);
+        $response = self::getUnserializedResponse();
+        $assertion = $response->getFirstAssertion();
 
-        $response = new SamlResponse();
-        $response
-            ->addAssertion($assertion = new Assertion())
-            ->setStatus(new Status(new StatusCode(SamlConstants::STATUS_SUCCESS)))
-            ->setID(Helper::generateID())
-            ->setIssueInstant(new \DateTime())
-            ->setDestination('https://sp.com/acs')
-            ->setIssuer(new Issuer('https://idp.com'))
-            ->setSignature(new SignatureWriter($certificate, $privateKey))
-        ;
+        if (!$assertion) {
+            throw new \Exception('Missing first response assertion');
+        }
+
+        $assertion->addItem(
+            (new AttributeStatement())
+                ->addAttribute(new Attribute('f_name', 'John'))
+                ->addAttribute(new Attribute('lname', 'Smith'))
+                ->addAttribute(new Attribute('login_name', 'some'))
+                ->addAttribute(new Attribute('user_name', 'some.username'))
+                ->addAttribute(new Attribute('type', 'Staff'))
+                ->addAttribute(new Attribute('short_id', 'jsmith'))
+        );
+
+        // response must be deserialized for signature verification
+        return self::getDeserializedResponse($response);
+    }
+
+    private static function getResponseAssertion(): Assertion
+    {
+        $assertion = new Assertion();
 
         $assertion
             ->setId(Helper::generateID())
@@ -86,15 +117,6 @@ class SamlUtilsTest extends TestCase
                     )
             )
             ->addItem(
-                (new AttributeStatement())
-                    ->addAttribute(new Attribute('f_name', 'John'))
-                    ->addAttribute(new Attribute('lname', 'Smith'))
-                    ->addAttribute(new Attribute('login_name', 'some'))
-                    ->addAttribute(new Attribute('user_name', 'some.username'))
-                    ->addAttribute(new Attribute('type', 'Staff'))
-                    ->addAttribute(new Attribute('short_id', 'jsmith'))
-            )
-            ->addItem(
                 (new AuthnStatement())
                     ->setAuthnInstant(new \DateTime('-10 MINUTE'))
                     ->setSessionIndex('_some_session_index')
@@ -105,8 +127,26 @@ class SamlUtilsTest extends TestCase
             )
         ;
 
-        // response must be deserialized for signature verification
-        return self::getDeserializedResponse($response);
+        return $assertion;
+    }
+
+    private static function getUnserializedResponse(): SamlResponse
+    {
+        $certificate = X509Certificate::fromFile('tests/certs/saml.crt');
+        $privateKey = KeyHelper::createPrivateKey('tests/certs/saml.pem', '', true);
+
+        $response = new SamlResponse();
+        $response
+            ->addAssertion(self::getResponseAssertion())
+            ->setStatus(new Status(new StatusCode(SamlConstants::STATUS_SUCCESS)))
+            ->setID(Helper::generateID())
+            ->setIssueInstant(new \DateTime())
+            ->setDestination('https://sp.com/acs')
+            ->setIssuer(new Issuer('https://idp.com'))
+            ->setSignature(new SignatureWriter($certificate, $privateKey))
+        ;
+
+        return $response;
     }
 
     private static function getDeserializedResponse(SamlResponse $response): SamlResponse

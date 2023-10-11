@@ -5,6 +5,7 @@ namespace theodorejb\SamlUtils;
 use LightSaml\Binding\BindingFactory;
 use LightSaml\Context\Profile\MessageContext;
 use LightSaml\Credential\{KeyHelper, X509Certificate};
+use LightSaml\Model\Assertion\AttributeStatement;
 use LightSaml\Model\Protocol\{Response as SamlResponse, SamlMessage};
 use LightSaml\Model\XmlDSig\{SignatureStringReader, SignatureXmlReader};
 use Symfony\Component\HttpFoundation\{Request, Response};
@@ -60,11 +61,7 @@ class SamlUtils
         }
     }
 
-    /**
-     * Returns the specified assertion attribute value
-     * @throws \Exception if the attribute doesn't exist
-     */
-    public static function getResponseAttributeValue(SamlResponse $response, string $name): string
+    public static function getSubjectNameId(SamlResponse $response): string
     {
         $assertion = $response->getFirstAssertion();
 
@@ -72,12 +69,30 @@ class SamlUtils
             throw new \Exception('Missing response assertion');
         }
 
-        $statement = $assertion->getFirstAttributeStatement();
+        return $assertion->getSubject()->getNameID()->getValue();
+    }
 
-        if (!$statement) {
-            throw new \Exception('Missing assertion attribute statement');
+    /**
+     * Returns the first attribute statement, or null if one does not exist.
+     * @throws \Exception if the response has no assertion
+     */
+    public static function getFirstAttributeStatement(SamlResponse $response): ?AttributeStatement
+    {
+        $assertion = $response->getFirstAssertion();
+
+        if (!$assertion) {
+            throw new \Exception('Missing response assertion');
         }
 
+        return $assertion->getFirstAttributeStatement();
+    }
+
+    /**
+     * Returns the specified assertion attribute value
+     * @throws \Exception if the attribute doesn't exist
+     */
+    public static function getAttributeStatementValue(AttributeStatement $statement, string $name): string
+    {
         $attribute = $statement->getFirstAttributeByName($name);
 
         if (!$attribute) {
@@ -98,5 +113,20 @@ class SamlUtils
         }
 
         return $value;
+    }
+
+    /**
+     * Returns the specified assertion attribute value
+     * @throws \Exception if the attribute doesn't exist
+     */
+    public static function getResponseAttributeValue(SamlResponse $response, string $name): string
+    {
+        $statement = self::getFirstAttributeStatement($response);
+
+        if (!$statement) {
+            throw new \Exception('Missing assertion attribute statement');
+        }
+
+        return self::getAttributeStatementValue($statement, $name);
     }
 }
