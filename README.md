@@ -20,14 +20,14 @@ The underlying `EntityDescriptor` object can be accessed via a readonly `$entity
 
 Returns an `X509Certificate` instance for the Identity Provider certificate.
 
-### `getIdpSsoRedirectLocation()`
+### `getIdpSsoService()`
 
-Returns the redirect location string defined by the Identity Provider
+Returns the Redirect or POST `SingleSignOnService` defined by the Identity Provider
 for receiving a SAML request to initiate single sign-on. 
 
-### `getIdpRedirectLogoutService()`
+### `getIdpLogoutService()`
 
-Returns the redirect `SingleLogoutService` if defined by the Identity Provider, otherwise `null`.
+Returns the Redirect or POST `SingleLogoutService` defined by the Identity Provider.
 
 ## Utility methods
 
