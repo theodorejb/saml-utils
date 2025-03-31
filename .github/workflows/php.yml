@@ -22,12 +22,19 @@ jobs:
       - name: Setup problem matchers for PHPUnit
         run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
+      - name: Validate composer.json and composer.lock
+        run: composer validate --strict
+
       - name: Install Composer dependencies
         run: composer install --no-progress
 
-      - name: Run Psalm
-        run: vendor/bin/psalm --output-format=github
+      - name: Run PHPUnit
+        run: composer test
+
+      - name: Perform static analysis
+        run: composer analyze -- --output-format=github
         if: ${{ matrix.php == '8.4' }}
 
-      - name: Run PHPUnit
-        run: vendor/bin/phpunit tests
+      - name: Check Formatting
+        run: vendor/bin/php-cs-fixer fix -v --dry-run --stop-on-violation --using-cache=no
+        if: ${{ matrix.php == '8.3' }}

@@ -11,8 +11,7 @@ class SamlMetadata
 {
     public function __construct(
         public readonly EntityDescriptor $entityDescriptor,
-    ) {
-    }
+    ) {}
 
     public function getIdpCertificate(): X509Certificate
     {

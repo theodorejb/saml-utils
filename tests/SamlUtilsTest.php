@@ -79,7 +79,7 @@ class SamlUtilsTest extends TestCase
                 ->addAttribute(new Attribute('login_name', 'some'))
                 ->addAttribute(new Attribute('user_name', 'some.username'))
                 ->addAttribute(new Attribute('type', 'Staff'))
-                ->addAttribute(new Attribute('short_id', 'jsmith'))
+                ->addAttribute(new Attribute('short_id', 'jsmith')),
         );
 
         // response must be deserialized for signature verification
@@ -104,17 +104,17 @@ class SamlUtilsTest extends TestCase
                                 (new SubjectConfirmationData())
                                     ->setInResponseTo('id_of_the_authn_request')
                                     ->setNotOnOrAfter(new \DateTime('+1 MINUTE'))
-                                    ->setRecipient('https://sp.com/acs')
-                            )
-                    )
+                                    ->setRecipient('https://sp.com/acs'),
+                            ),
+                    ),
             )
             ->setConditions(
                 (new Conditions())
                     ->setNotBefore(new \DateTime())
                     ->setNotOnOrAfter(new \DateTime('+1 MINUTE'))
                     ->addItem(
-                        new AudienceRestriction(['https://sp.com/acs'])
-                    )
+                        new AudienceRestriction(['https://sp.com/acs']),
+                    ),
             )
             ->addItem(
                 (new AuthnStatement())
@@ -122,8 +122,8 @@ class SamlUtilsTest extends TestCase
                     ->setSessionIndex('_some_session_index')
                     ->setAuthnContext(
                         (new AuthnContext())
-                            ->setAuthnContextClassRef(SamlConstants::AUTHN_CONTEXT_PASSWORD_PROTECTED_TRANSPORT)
-                    )
+                            ->setAuthnContextClassRef(SamlConstants::AUTHN_CONTEXT_PASSWORD_PROTECTED_TRANSPORT),
+                    ),
             )
         ;
 

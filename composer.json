@@ -8,6 +8,7 @@
         "litesaml/lightsaml": "^4.5"
     },
     "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.75",
         "phpunit/phpunit": "^11.5",
         "psalm/plugin-phpunit": "^0.19.5",
         "vimeo/psalm": "^6.10"
@@ -27,6 +28,7 @@
     },
     "scripts": {
         "analyze": "psalm",
+        "cs-fix": "php-cs-fixer fix -v",
         "test": "phpunit tests"
     },
     "authors": [

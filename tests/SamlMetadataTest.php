@@ -18,7 +18,7 @@ class SamlMetadataTest extends TestCase
             'https://some.entity.id',
             '',
             'https://example.com/idp/profile/SAML2/Redirect/SSO',
-            X509Certificate::fromFile('tests/certs/saml.crt')
+            X509Certificate::fromFile('tests/certs/saml.crt'),
         );
 
         $sls = new SingleLogoutService();

@@ -1,7 +1,7 @@
 # SAML Utils
 
 This package provides a few helpful utilities on top of
-[Light Saml](https://github.com/litesaml/lightsaml) to streamline common tasks.
+[Lite Saml](https://github.com/litesaml/lightsaml) to streamline common tasks.
 
 ## Install via Composer
 
