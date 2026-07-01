@@ -2,40 +2,42 @@
 
 namespace theodorejb\SamlUtils;
 
+use GuzzleHttp\Psr7\{HttpFactory, ServerRequest};
 use LightSaml\Binding\BindingFactory;
 use LightSaml\Context\Profile\MessageContext;
 use LightSaml\Credential\{KeyHelper, X509Certificate};
 use LightSaml\Model\Assertion\AttributeStatement;
 use LightSaml\Model\Protocol\{Response as SamlResponse, SamlMessage};
 use LightSaml\Model\XmlDSig\{SignatureStringReader, SignatureXmlReader};
-use Symfony\Component\HttpFoundation\{Request, Response};
+use Psr\Http\Message\ResponseInterface;
 
 class SamlUtils
 {
-    /**
-     * @api
-     */
     public static function getRequestFromGlobals(): MessageContext
     {
-        $request = Request::createFromGlobals();
-        $bindingFactory = new BindingFactory();
-        $binding = $bindingFactory->getBindingByRequest($request);
+        $request = ServerRequest::fromGlobals();
+        $binding = self::getBindingFactory()->getBindingByRequest($request);
         $messageContext = new MessageContext();
         $binding->receive($request, $messageContext);
         return $messageContext;
     }
 
     /**
-     * Returns an HTTP Response object for sending the SAML message.
+     * Returns a ResponseInterface object for sending the SAML message.
      */
-    public static function getMessageHttpResponse(SamlMessage $message, string $bindingType): Response
+    public static function getMessageHttpResponse(SamlMessage $message, string $bindingType): ResponseInterface
     {
         $context = new MessageContext();
         $context->setBindingType($bindingType);
         $context->setMessage($message);
-        $bindingFactory = new BindingFactory();
 
-        return $bindingFactory->create($bindingType)->send($context);
+        return self::getBindingFactory()->create($bindingType)->send($context);
+    }
+
+    private static function getBindingFactory(): BindingFactory
+    {
+        $httpFactory = new HttpFactory();
+        return new BindingFactory(null, $httpFactory, $httpFactory);
     }
 
     /**
@@ -47,7 +49,7 @@ class SamlUtils
         $signature = $message->getSignature();
 
         if ($signature === null) {
-            $type = (new \ReflectionClass($message))->getShortName();
+            $type = new \ReflectionClass($message)->getShortName();
             throw new \Exception("Missing {$type} signature");
         }
 
@@ -56,7 +58,7 @@ class SamlUtils
         }
 
         if (!$signature->validate($key)) {
-            $type = (new \ReflectionClass($message))->getShortName();
+            $type = new \ReflectionClass($message)->getShortName();
             throw new \Exception("{$type} signature verification failed");
         }
     }
@@ -69,7 +71,8 @@ class SamlUtils
             throw new \Exception('Missing response assertion');
         }
 
-        return $assertion->getSubject()->getNameID()->getValue();
+        return $assertion->getSubject()?->getNameID()?->getValue()
+            ?? throw new \Exception('Missing subject name ID');
     }
 
     /**

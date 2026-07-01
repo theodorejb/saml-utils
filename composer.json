@@ -4,14 +4,14 @@
     "type": "library",
     "license": "MIT",
     "require": {
-        "php": ">=8.2",
-        "litesaml/lightsaml": "^4.5"
+        "php": ">=8.4",
+        "guzzlehttp/psr7": "^2.12",
+        "litesaml/lightsaml": "^5.0.1"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.95",
-        "phpunit/phpunit": "^11.5",
-        "psalm/plugin-phpunit": "^0.19.7",
-        "vimeo/psalm": "^6.16"
+        "phpstan/phpstan": "^2.2.3",
+        "phpunit/phpunit": "^13.2"
     },
     "autoload": {
         "psr-4": {
@@ -24,13 +24,10 @@
         }
     },
     "config": {
-        "platform": {
-            "php": "8.2.31"
-        },
         "sort-packages": true
     },
     "scripts": {
-        "analyze": "psalm",
+        "analyze": "phpstan analyze",
         "cs-fix": "php-cs-fixer fix -v",
         "test": "phpunit tests"
     },

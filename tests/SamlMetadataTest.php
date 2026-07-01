@@ -3,8 +3,8 @@
 namespace theodorejb\SamlUtils\Tests;
 
 use LightSaml\Builder\EntityDescriptor\SimpleEntityDescriptorBuilder;
+use LightSaml\Context\Model\SerializationContext;
 use LightSaml\Credential\X509Certificate;
-use LightSaml\Model\Context\SerializationContext;
 use LightSaml\Model\Metadata\SingleLogoutService;
 use LightSaml\SamlConstants;
 use PHPUnit\Framework\TestCase;
@@ -37,7 +37,11 @@ class SamlMetadataTest extends TestCase
         $context = new SerializationContext();
         $entityDescriptor->serialize($context->getDocument(), $context);
 
-        return $context->getDocument()->saveXML();
+        $xml = $context->getDocument()->saveXML();
+        if ($xml === false) {
+            throw new \Exception('Failed to save XML');
+        }
+        return $xml;
     }
 
     public function testGetIdpSsoService(): void

@@ -2,23 +2,22 @@
 
 namespace theodorejb\SamlUtils\Tests;
 
+use LightSaml\Context\Model\{DeserializationContext, SerializationContext};
 use LightSaml\Credential\{KeyHelper, X509Certificate};
 use LightSaml\{Helper, SamlConstants};
 use LightSaml\Model\Assertion\{Assertion, Attribute, AttributeStatement, AudienceRestriction, AuthnContext};
 use LightSaml\Model\Assertion\{AuthnStatement, Conditions, Issuer, NameID, Subject, SubjectConfirmation};
 use LightSaml\Model\Assertion\SubjectConfirmationData;
-use LightSaml\Model\Context\{DeserializationContext, SerializationContext};
 use LightSaml\Model\Protocol\{AuthnRequest, Response as SamlResponse, Status, StatusCode};
 use LightSaml\Model\XmlDSig\SignatureWriter;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use theodorejb\SamlUtils\{SamlMetadata, SamlUtils};
 
 class SamlUtilsTest extends TestCase
 {
-    public function testGetMessageHttpResponse(): void
+    private static function getAuthnRequest(): AuthnRequest
     {
-        $authnRequest = (new AuthnRequest())
+        return new AuthnRequest()
             ->setAssertionConsumerServiceURL('https://sp.com/acs')
             ->setProtocolBinding(SamlConstants::BINDING_SAML2_HTTP_POST)
             ->setID('_4173ed5ed704c26e36241d0dfe0f471ce04b561a4f')
@@ -26,11 +25,52 @@ class SamlUtilsTest extends TestCase
             ->setDestination('https://example.com/idp/profile/SAML2/Redirect/SSO')
             ->setIssuer(new Issuer('https://some.entity.id'))
         ;
+    }
 
+    public function testGetMessageHttpResponse(): void
+    {
         $expected = 'https://example.com/idp/profile/SAML2/Redirect/SSO?SAMLRequest=fZFBb8IwDIXv%2BxVV7jRpCSBFpYiNw5CYQLTbYZcpJO6I1CZdnCL271dgbJyQfLLs975nZ7NjU0cH8GicnZIkZmSWP2TzLuztFr46wBD1ExanpPNWOIkGhZUNoAhKFPOXlUhjJlrvglOuJtFyMSUfPJkMQY9ATxhX6RiG45QnmukKWMUniQLGd6NxInlForerd6%2FTryN2sLQYpA19i6XDAeODlJfJWDDW1zuJFj2UsTKct%2FYhtCgohaNs2hpi5RpqdEt7osrUQE%2BIKd2CNh5UoEWxJtHml%2FbRWG3s5%2F1ou8sQiuey3Aw266Ik0RwR%2FMn%2FyVnsGvAF%2BINR8Lpd%2FRNhe4aRCkmeoWxqcQ7nL%2FcUp859Z3l1IfmfpmsgBhtM%2BI6NzuiNbJ7R26%2FlDz8%3D';
-        /** @var RedirectResponse $response */
-        $response = SamlUtils::getMessageHttpResponse($authnRequest, SamlConstants::BINDING_SAML2_HTTP_REDIRECT);
-        $this->assertSame($expected, $response->getTargetUrl());
+
+        $response = SamlUtils::getMessageHttpResponse(self::getAuthnRequest(), SamlConstants::BINDING_SAML2_HTTP_REDIRECT);
+        $this->assertSame($expected, $response->getHeaderLine('Location'));
+    }
+
+    public function testGetRequestFromGlobals(): void
+    {
+        // Encode via the redirect binding to get the query string an IdP would receive.
+        $response = SamlUtils::getMessageHttpResponse(self::getAuthnRequest(), SamlConstants::BINDING_SAML2_HTTP_REDIRECT);
+        $queryString = (string) parse_url($response->getHeaderLine('Location'), PHP_URL_QUERY);
+        parse_str($queryString, $params);
+
+        // Simulate the incoming GET request via the superglobals fromGlobals() reads.
+        // Binding detection reads $_GET; the redirect binding parses $_SERVER['QUERY_STRING'].
+        $originalGet = $_GET;
+        $originalMethod = $_SERVER['REQUEST_METHOD'] ?? null;
+        $originalQuery = $_SERVER['QUERY_STRING'] ?? null;
+        $_GET = $params;
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['QUERY_STRING'] = $queryString;
+
+        try {
+            $context = SamlUtils::getRequestFromGlobals();
+        } finally {
+            $_GET = $originalGet;
+            if ($originalMethod === null) {
+                unset($_SERVER['REQUEST_METHOD']);
+            } else {
+                $_SERVER['REQUEST_METHOD'] = $originalMethod;
+            }
+            if ($originalQuery === null) {
+                unset($_SERVER['QUERY_STRING']);
+            } else {
+                $_SERVER['QUERY_STRING'] = $originalQuery;
+            }
+        }
+
+        $message = $context->getMessage();
+        $this->assertInstanceOf(AuthnRequest::class, $message);
+        $this->assertSame('_4173ed5ed704c26e36241d0dfe0f471ce04b561a4f', $message->getID());
+        $this->assertSame('https://example.com/idp/profile/SAML2/Redirect/SSO', $message->getDestination());
     }
 
     public function testGetResponseAttributeValue(): void
@@ -73,7 +113,7 @@ class SamlUtilsTest extends TestCase
         }
 
         $assertion->addItem(
-            (new AttributeStatement())
+            new AttributeStatement()
                 ->addAttribute(new Attribute('f_name', 'John'))
                 ->addAttribute(new Attribute('lname', 'Smith'))
                 ->addAttribute(new Attribute('login_name', 'some'))
@@ -95,13 +135,13 @@ class SamlUtilsTest extends TestCase
             ->setIssueInstant(new \DateTime())
             ->setIssuer(new Issuer('https://idp.com'))
             ->setSubject(
-                (new Subject())
+                new Subject()
                     ->setNameID(new NameID('some.username', SamlConstants::NAME_ID_FORMAT_PERSISTENT))
                     ->addSubjectConfirmation(
-                        (new SubjectConfirmation())
+                        new SubjectConfirmation()
                             ->setMethod(SamlConstants::CONFIRMATION_METHOD_BEARER)
                             ->setSubjectConfirmationData(
-                                (new SubjectConfirmationData())
+                                new SubjectConfirmationData()
                                     ->setInResponseTo('id_of_the_authn_request')
                                     ->setNotOnOrAfter(new \DateTime('+1 MINUTE'))
                                     ->setRecipient('https://sp.com/acs'),
@@ -109,7 +149,7 @@ class SamlUtilsTest extends TestCase
                     ),
             )
             ->setConditions(
-                (new Conditions())
+                new Conditions()
                     ->setNotBefore(new \DateTime())
                     ->setNotOnOrAfter(new \DateTime('+1 MINUTE'))
                     ->addItem(
@@ -117,11 +157,11 @@ class SamlUtilsTest extends TestCase
                     ),
             )
             ->addItem(
-                (new AuthnStatement())
+                new AuthnStatement()
                     ->setAuthnInstant(new \DateTime('-10 MINUTE'))
                     ->setSessionIndex('_some_session_index')
                     ->setAuthnContext(
-                        (new AuthnContext())
+                        new AuthnContext()
                             ->setAuthnContextClassRef(SamlConstants::AUTHN_CONTEXT_PASSWORD_PROTECTED_TRANSPORT),
                     ),
             )
@@ -155,13 +195,17 @@ class SamlUtilsTest extends TestCase
         $response->serialize($serializeContext->getDocument(), $serializeContext);
         $xml = $serializeContext->getDocument()->saveXML();
 
-        if ($xml === '') {
+        if (!$xml) {
             throw new \Exception('XML response cannot be blank');
         }
 
         $deserializeContext = new DeserializationContext();
-        $deserializeContext->getDocument()->loadXML($xml);
-        $node = $deserializeContext->getDocument()->firstChild;
+        $document = $deserializeContext->getDocument();
+        if (!$document) {
+            throw new \Exception('Missing required deserialization document');
+        }
+        $document->loadXML($xml);
+        $node = $document->firstChild;
 
         if (!$node) {
             throw new \Exception('Failed to parse XML response');

@@ -2,8 +2,8 @@
 
 namespace theodorejb\SamlUtils;
 
+use LightSaml\Context\Model\DeserializationContext;
 use LightSaml\Credential\X509Certificate;
-use LightSaml\Model\Context\DeserializationContext;
 use LightSaml\Model\Metadata\{EntityDescriptor, SingleLogoutService, SingleSignOnService};
 use LightSaml\SamlConstants;
 
@@ -27,7 +27,11 @@ class SamlMetadata
             throw new \Exception('Failed to retrieve IDP SSO key descriptor');
         }
 
-        return $keyDescriptor->getCertificate();
+        $certificate = $keyDescriptor->getCertificate();
+        if (!$certificate) {
+            throw new \Exception('Failed to retrieve IDP SSO certificate');
+        }
+        return $certificate;
     }
 
     public function getIdpSsoService(): SingleSignOnService
@@ -81,8 +85,12 @@ class SamlMetadata
         }
 
         $context = new DeserializationContext();
-        $context->getDocument()->loadXML($xml);
-        $node = $context->getDocument()->firstChild;
+        $document = $context->getDocument();
+        if (!$document) {
+            throw new \Exception('Missing required deserialization document');
+        }
+        $document->loadXML($xml);
+        $node = $document->firstChild;
 
         if (!$node) {
             throw new \Exception('Failed to parse XML metadata');

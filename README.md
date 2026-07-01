@@ -37,9 +37,9 @@ The `SamlUtils` class implements the following static utility methods:
 
 Returns an object for the SAML request or response from the global GET/POST data.
 
-### `getMessageHttpResponse(SamlMessage $message, string $bindingType): Response`
+### `getMessageHttpResponse(SamlMessage $message, string $bindingType): ResponseInterface`
 
-Returns a `Symfony\Component\HttpFoundation\Response` instance for sending the SAML message.
+Returns a PSR-7 `Psr\Http\Message\ResponseInterface` instance for sending the SAML message.
 
 ### `validateSignature(SamlMessage $message, X509Certificate $certificate): void`
 
