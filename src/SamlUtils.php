@@ -34,6 +34,40 @@ class SamlUtils
         return self::getBindingFactory()->create($bindingType)->send($context);
     }
 
+    /**
+     * Emits a PSR-7 response to the client by sending its status line, headers, and body.
+     *
+     * @throws \Exception if output has already started, since the required headers can no longer be sent.
+     */
+    public static function sendResponse(ResponseInterface $response): void
+    {
+        if (headers_sent($file, $line)) {
+            throw new \Exception("Cannot send SAML response: output already started at {$file}:{$line}");
+        }
+
+        $statusCode = $response->getStatusCode();
+        $reasonPhrase = $response->getReasonPhrase();
+
+        header(sprintf(
+            'HTTP/%s %d%s',
+            $response->getProtocolVersion(),
+            $statusCode,
+            $reasonPhrase === '' ? '' : ' ' . $reasonPhrase,
+        ), true, $statusCode);
+
+        foreach ($response->getHeaders() as $name => $values) {
+            // Replace on the first value of each header, except Set-Cookie which must never be merged.
+            $replace = strcasecmp($name, 'Set-Cookie') !== 0;
+
+            foreach ($values as $value) {
+                header("{$name}: {$value}", $replace);
+                $replace = false;
+            }
+        }
+
+        echo $response->getBody();
+    }
+
     private static function getBindingFactory(): BindingFactory
     {
         $httpFactory = new HttpFactory();

@@ -41,6 +41,10 @@ Returns an object for the SAML request or response from the global GET/POST data
 
 Returns a PSR-7 `Psr\Http\Message\ResponseInterface` instance for sending the SAML message.
 
+### `sendResponse(ResponseInterface $response): void`
+
+Emits a PSR-7 `Psr\Http\Message\ResponseInterface` to the client by sending its status line, headers, and body.
+
 ### `validateSignature(SamlMessage $message, X509Certificate $certificate): void`
 
 Throws an Exception if the message signature is missing or fails verification with the certificate.
