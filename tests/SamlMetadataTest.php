@@ -40,14 +40,6 @@ class SamlMetadataTest extends TestCase
         return $context->getDocument()->saveXML();
     }
 
-    public function testGetIdpSsoRedirectLocation(): void
-    {
-        $metadata = SamlMetadata::fromXml(self::getIdpMetadata());
-        $expected = 'https://example.com/idp/profile/SAML2/Redirect/SSO';
-        /** @psalm-suppress DeprecatedMethod */
-        $this->assertSame($expected, $metadata->getIdpSsoRedirectLocation());
-    }
-
     public function testGetIdpSsoService(): void
     {
         $metadata = SamlMetadata::fromXml(self::getIdpMetadata());
@@ -60,13 +52,5 @@ class SamlMetadataTest extends TestCase
         $metadata = SamlMetadata::fromXml(self::getIdpMetadata());
         $expected = 'https://example.com/idp/profile/SAML2/Redirect/SLO';
         $this->assertSame($expected, $metadata->getIdpLogoutService()->getResponseLocation());
-    }
-
-    public function testGetIdpRedirectLogoutService(): void
-    {
-        $metadata = SamlMetadata::fromXml(self::getIdpMetadata());
-        $expected = 'https://example.com/idp/profile/SAML2/Redirect/SLO';
-        /** @psalm-suppress DeprecatedMethod */
-        $this->assertSame($expected, $metadata->getIdpRedirectLogoutService()?->getResponseLocation());
     }
 }

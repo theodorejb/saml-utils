@@ -52,26 +52,6 @@ class SamlMetadata
         return $ssoService;
     }
 
-    /**
-     * @deprecated Use getIdpSsoService() method instead.
-     */
-    public function getIdpSsoRedirectLocation(): string
-    {
-        $ssoDescriptor = $this->entityDescriptor->getFirstIdpSsoDescriptor();
-
-        if (!$ssoDescriptor) {
-            throw new \Exception('Failed to retrieve IDP SSO descriptor');
-        }
-
-        $ssoService = $ssoDescriptor->getFirstSingleSignOnService(SamlConstants::BINDING_SAML2_HTTP_REDIRECT);
-
-        if ($ssoService === null) {
-            throw new \Exception('Failed to retrieve redirect SSO binding');
-        }
-
-        return $ssoService->getLocation();
-    }
-
     public function getIdpLogoutService(): SingleLogoutService
     {
         $ssoDescriptor = $this->entityDescriptor->getFirstIdpSsoDescriptor();
@@ -92,15 +72,6 @@ class SamlMetadata
         }
 
         return $logoutService;
-    }
-
-    /**
-     * @deprecated Use getIdpLogoutService() method instead.
-     */
-    public function getIdpRedirectLogoutService(): ?SingleLogoutService
-    {
-        $ssoDescriptor = $this->entityDescriptor->getFirstIdpSsoDescriptor();
-        return $ssoDescriptor?->getFirstSingleLogoutService(SamlConstants::BINDING_SAML2_HTTP_REDIRECT);
     }
 
     public static function fromXml(string $xml): self
