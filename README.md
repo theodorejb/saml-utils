@@ -45,6 +45,11 @@ Returns a PSR-7 `Psr\Http\Message\ResponseInterface` instance for sending the SA
 
 Emits a PSR-7 `Psr\Http\Message\ResponseInterface` to the client by sending its status line, headers, and body.
 
+### `createSpMetadata(string $entityId, string $acsPostUrl, string $slsRedirectUrl, X509Certificate $certificate): string`
+
+Returns signed Service Provider metadata XML with an HTTP-POST assertion consumer service
+and HTTP-Redirect single logout service.
+
 ### `validateSignature(SamlMessage $message, X509Certificate $certificate): void`
 
 Throws an Exception if the message signature is missing or fails verification with the certificate.

@@ -4,11 +4,15 @@ namespace theodorejb\SamlUtils;
 
 use GuzzleHttp\Psr7\{HttpFactory, ServerRequest};
 use LightSaml\Binding\BindingFactory;
+use LightSaml\Context\Model\SerializationContext;
 use LightSaml\Context\Profile\MessageContext;
 use LightSaml\Credential\{KeyHelper, X509Certificate};
+use LightSaml\Helper;
 use LightSaml\Model\Assertion\AttributeStatement;
+use LightSaml\Model\Metadata\{AssertionConsumerService, EntityDescriptor, KeyDescriptor, SingleLogoutService, SpSsoDescriptor};
 use LightSaml\Model\Protocol\{Response as SamlResponse, SamlMessage};
 use LightSaml\Model\XmlDSig\{SignatureStringReader, SignatureXmlReader};
+use LightSaml\SamlConstants;
 use Psr\Http\Message\ResponseInterface;
 
 class SamlUtils
@@ -72,6 +76,51 @@ class SamlUtils
     {
         $httpFactory = new HttpFactory();
         return new BindingFactory(null, $httpFactory, $httpFactory);
+    }
+
+    /**
+     * Returns signed SP metadata XML with an HTTP-POST assertion consumer service
+     * and HTTP-Redirect single logout service.
+     */
+    public static function createSpMetadata(
+        string $entityId,
+        string $acsPostUrl,
+        string $slsRedirectUrl,
+        X509Certificate $certificate,
+    ): string {
+        $acs = new AssertionConsumerService();
+        $acs->setIsDefault(true)
+            ->setBinding(SamlConstants::BINDING_SAML2_HTTP_POST)
+            ->setLocation($acsPostUrl);
+
+        $sls = new SingleLogoutService();
+        $sls->setBinding(SamlConstants::BINDING_SAML2_HTTP_REDIRECT)
+            ->setLocation($slsRedirectUrl);
+
+        $keyDescriptor = new KeyDescriptor()
+            ->setUse(KeyDescriptor::USE_SIGNING)
+            ->setCertificate($certificate);
+
+        $spSsoDescriptor = new SpSsoDescriptor();
+        $spSsoDescriptor->setWantAssertionsSigned(true)
+            ->addAssertionConsumerService($acs)
+            ->addSingleLogoutService($sls);
+        $spSsoDescriptor->addKeyDescriptor($keyDescriptor);
+
+        $entityDescriptor = new EntityDescriptor()
+            ->setID(Helper::generateID())
+            ->setEntityID($entityId)
+            ->addItem($spSsoDescriptor);
+
+        $context = new SerializationContext();
+        $entityDescriptor->serialize($context->getDocument(), $context);
+        $xml = $context->getDocument()->saveXML();
+
+        if ($xml === false) {
+            throw new \Exception('Failed to serialize SP metadata');
+        }
+
+        return $xml;
     }
 
     /**

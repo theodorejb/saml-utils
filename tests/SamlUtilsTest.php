@@ -8,6 +8,7 @@ use LightSaml\{Helper, SamlConstants};
 use LightSaml\Model\Assertion\{Assertion, Attribute, AttributeStatement, AudienceRestriction, AuthnContext};
 use LightSaml\Model\Assertion\{AuthnStatement, Conditions, Issuer, NameID, Subject, SubjectConfirmation};
 use LightSaml\Model\Assertion\SubjectConfirmationData;
+use LightSaml\Model\Metadata\EntityDescriptor;
 use LightSaml\Model\Protocol\{AuthnRequest, Response as SamlResponse, Status, StatusCode};
 use LightSaml\Model\XmlDSig\SignatureWriter;
 use PHPUnit\Framework\TestCase;
@@ -71,6 +72,41 @@ class SamlUtilsTest extends TestCase
         $this->assertInstanceOf(AuthnRequest::class, $message);
         $this->assertSame('_4173ed5ed704c26e36241d0dfe0f471ce04b561a4f', $message->getID());
         $this->assertSame('https://example.com/idp/profile/SAML2/Redirect/SSO', $message->getDestination());
+    }
+
+    public function testCreateSpMetadata(): void
+    {
+        $certificate = X509Certificate::fromFile('tests/certs/saml.crt');
+        $xml = SamlUtils::createSpMetadata(
+            'https://sp.com/saml',
+            'https://sp.com/saml/acs',
+            'https://sp.com/saml/sls',
+            $certificate,
+        );
+
+        $deserializeContext = new DeserializationContext();
+        $document = $deserializeContext->getDocument();
+        $this->assertNotNull($document);
+        $document->loadXML($xml);
+        $node = $document->firstChild;
+        $this->assertNotNull($node);
+
+        $entityDescriptor = new EntityDescriptor();
+        $entityDescriptor->deserialize($node, $deserializeContext);
+
+        $this->assertSame('https://sp.com/saml', $entityDescriptor->getEntityID());
+
+        $spDescriptor = $entityDescriptor->getFirstSpSsoDescriptor();
+        $this->assertNotNull($spDescriptor);
+        $this->assertTrue($spDescriptor->getWantAssertionsSigned());
+
+        $acs = $spDescriptor->getFirstAssertionConsumerService(SamlConstants::BINDING_SAML2_HTTP_POST);
+        $this->assertNotNull($acs);
+        $this->assertSame('https://sp.com/saml/acs', $acs->getLocation());
+
+        $sls = $spDescriptor->getFirstSingleLogoutService(SamlConstants::BINDING_SAML2_HTTP_REDIRECT);
+        $this->assertNotNull($sls);
+        $this->assertSame('https://sp.com/saml/sls', $sls->getLocation());
     }
 
     public function testGetResponseAttributeValue(): void
