@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.1.0] - 2026-07-20
+
+### Changed
+- `guzzlehttp/psr7` ^3.0 is now required.
+
+
 ## [2.0.0] - 2026-07-06
 
 ### Changed
@@ -43,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Initial release with utility methods.
 
 
+[2.1.0]: https://github.com/theodorejb/saml-utils/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/theodorejb/saml-utils/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/theodorejb/saml-utils/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/theodorejb/saml-utils/compare/v1.0.0...v1.1.0
