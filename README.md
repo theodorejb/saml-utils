@@ -29,6 +29,41 @@ for receiving a SAML request to initiate single sign-on.
 
 Returns the Redirect or POST `SingleLogoutService` defined by the Identity Provider.
 
+## Service Provider
+
+The `ServiceProvider` class creates metadata and messages for a Service Provider
+with an HTTP-POST assertion consumer service and HTTP-Redirect single logout service.
+Every message it creates is signed with the private key, so its metadata can declare
+that authentication requests are signed.
+
+```php
+use LightSaml\Credential\{KeyHelper, X509Certificate};
+use theodorejb\SamlUtils\ServiceProvider;
+
+$sp = new ServiceProvider(
+    entityId: 'https://sp.com/saml',
+    acsPostUrl: 'https://sp.com/saml/acs',
+    slsRedirectUrl: 'https://sp.com/saml/sls',
+    certificate: X509Certificate::fromFile('saml.crt'),
+    privateKey: KeyHelper::createPrivateKey('saml.pem', '', true),
+);
+```
+
+### `getMetadataXml(): string`
+
+Returns Service Provider metadata XML declaring that authentication requests are signed
+and that assertions should be signed.
+
+### `createAuthnRequest(string $destination, ?string $relayState = null): AuthnRequest`
+
+Returns a signed request asking the Identity Provider to authenticate the user
+and POST its response to the assertion consumer service.
+
+### `createLogoutResponse(SingleLogoutService $sloService, LogoutRequest $request): LogoutResponse`
+
+Returns a signed success response to the Identity Provider's logout request.
+It is sent to the service's `ResponseLocation`, or its `Location` if no `ResponseLocation` is specified.
+
 ## Utility methods
 
 The `SamlUtils` class implements the following static utility methods:
@@ -44,11 +79,6 @@ Returns a PSR-7 `Psr\Http\Message\ResponseInterface` instance for sending the SA
 ### `sendResponse(ResponseInterface $response): void`
 
 Emits a PSR-7 `Psr\Http\Message\ResponseInterface` to the client by sending its status line, headers, and body.
-
-### `createSpMetadata(string $entityId, string $acsPostUrl, string $slsRedirectUrl, X509Certificate $certificate): string`
-
-Returns signed Service Provider metadata XML with an HTTP-POST assertion consumer service
-and HTTP-Redirect single logout service.
 
 ### `validateSignature(SamlMessage $message, X509Certificate $certificate): void`
 
