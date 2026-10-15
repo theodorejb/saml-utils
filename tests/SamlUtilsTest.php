@@ -98,6 +98,7 @@ class SamlUtilsTest extends TestCase
 
         $spDescriptor = $entityDescriptor->getFirstSpSsoDescriptor();
         $this->assertNotNull($spDescriptor);
+        $this->assertTrue($spDescriptor->getAuthnRequestsSigned());
         $this->assertTrue($spDescriptor->getWantAssertionsSigned());
 
         $acs = $spDescriptor->getFirstAssertionConsumerService(SamlConstants::BINDING_SAML2_HTTP_POST);

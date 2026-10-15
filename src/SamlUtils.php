@@ -79,8 +79,9 @@ class SamlUtils
     }
 
     /**
-     * Returns signed SP metadata XML with an HTTP-POST assertion consumer service
-     * and HTTP-Redirect single logout service.
+     * Returns SP metadata XML with an HTTP-POST assertion consumer service
+     * and HTTP-Redirect single logout service. The SP declares that it signs
+     * authentication requests and wants assertions to be signed.
      */
     public static function createSpMetadata(
         string $entityId,
@@ -102,7 +103,8 @@ class SamlUtils
             ->setCertificate($certificate);
 
         $spSsoDescriptor = new SpSsoDescriptor();
-        $spSsoDescriptor->setWantAssertionsSigned(true)
+        $spSsoDescriptor->setAuthnRequestsSigned(true)
+            ->setWantAssertionsSigned(true)
             ->addAssertionConsumerService($acs)
             ->addSingleLogoutService($sls);
         $spSsoDescriptor->addKeyDescriptor($keyDescriptor);
