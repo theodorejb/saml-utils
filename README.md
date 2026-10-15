@@ -63,6 +63,8 @@ and POST its response to the assertion consumer service.
 
 Returns a signed success response to the Identity Provider's logout request.
 It is sent to the service's `ResponseLocation`, or its `Location` if no `ResponseLocation` is specified.
+This method does not verify the logout request, so first pass it to `SamlUtils::validateSignature()`
+with the Identity Provider's certificate.
 
 ## Utility methods
 
