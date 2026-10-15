@@ -97,6 +97,51 @@ class SamlUtilsTest extends TestCase
         $this->assertSame('some.username', SamlUtils::getSubjectNameId($response));
     }
 
+    /**
+     * Regression test for a signature bypass in lightsaml 6.0.0, where a SignatureValue
+     * that isn't valid base64 made xmlseclibs 4 return -1 from verify(), which was treated as success.
+     */
+    public function testRejectsForgedResponseWithInvalidSignatureValue(): void
+    {
+        $doc = new \DOMDocument();
+        $doc->loadXML(self::getResponseXml(self::getUnserializedResponse()));
+        $xpath = new \DOMXPath($doc);
+        $xpath->registerNamespace('ds', SamlConstants::NS_XMLDSIG);
+        $xpath->registerNamespace('saml', SamlConstants::NS_ASSERTION);
+
+        // tamper with the signed content
+        self::queryElement($xpath, '//saml:NameID')->textContent = 'admin';
+
+        // recompute the digest (no key required) so only the signature value is wrong
+        $root = self::queryElement($xpath, '/*');
+        $signature = self::queryElement($xpath, 'ds:Signature', $root);
+        $nextSibling = $signature->nextSibling;
+        $root->removeChild($signature);
+        $digest = base64_encode(hash('sha256', $root->C14N(true), true));
+        $root->insertBefore($signature, $nextSibling);
+
+        self::queryElement($xpath, 'ds:SignedInfo/ds:Reference/ds:DigestValue', $signature)->textContent = $digest;
+        self::queryElement($xpath, 'ds:SignatureValue', $signature)->textContent = '!!!!';
+
+        $response = self::deserializeResponse((string) $doc->saveXML());
+
+        // must fail on the signature itself, not the digest check
+        $this->expectExceptionMessage('Unable to verify Signature');
+        SamlUtils::validateSignature($response, X509Certificate::fromFile('tests/certs/saml.crt'));
+    }
+
+    private static function queryElement(\DOMXPath $xpath, string $expression, ?\DOMNode $context = null): \DOMElement
+    {
+        $list = $xpath->query($expression, $context);
+        $node = $list ? $list->item(0) : null;
+
+        if (!$node instanceof \DOMElement) {
+            throw new \Exception("Missing {$expression} element");
+        }
+
+        return $node;
+    }
+
     private static function getSignedResponseWithoutAttributeStatement(): SamlResponse
     {
         // response must be deserialized for signature verification
@@ -191,6 +236,11 @@ class SamlUtilsTest extends TestCase
 
     private static function getDeserializedResponse(SamlResponse $response): SamlResponse
     {
+        return self::deserializeResponse(self::getResponseXml($response));
+    }
+
+    private static function getResponseXml(SamlResponse $response): string
+    {
         $serializeContext = new SerializationContext();
         $response->serialize($serializeContext->getDocument(), $serializeContext);
         $xml = $serializeContext->getDocument()->saveXML();
@@ -199,6 +249,11 @@ class SamlUtilsTest extends TestCase
             throw new \Exception('XML response cannot be blank');
         }
 
+        return $xml;
+    }
+
+    private static function deserializeResponse(string $xml): SamlResponse
+    {
         $deserializeContext = new DeserializationContext();
         $document = $deserializeContext->getDocument();
         if (!$document) {
