@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [4.0.0] - 2026-10-16
+
+### Changed
+- Lite Saml ^6.0.1 is now required, which uses robrichards/xmlseclibs 4 and phpseclib 3.
+  Decrypting assertions that use RSA-1.5 key transport is no longer supported,
+  and projects that require xmlseclibs 3 will need to upgrade it.
+
+
 ## [3.0.0] - 2026-10-15
 
 ### Added
@@ -64,6 +72,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Initial release with utility methods.
 
 
+[4.0.0]: https://github.com/theodorejb/saml-utils/compare/v3.0.0...v4.0.0
 [3.0.0]: https://github.com/theodorejb/saml-utils/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/theodorejb/saml-utils/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/theodorejb/saml-utils/compare/v1.2.0...v2.0.0
